@@ -1,5 +1,5 @@
 [workspace]
-members = ["main", "core"]
+members = ["main", "core", "client", "server"]
 
 [workspace.dependencies]
 bevy = "0.12.1"
