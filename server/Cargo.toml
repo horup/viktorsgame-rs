@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 bevy = {workspace = true}
+hyper = {workspace = true}
+hyper-tungstenite = {workspace = true}
+hyper-util = {workspace = true}
+tokio = {workspace = true}
