@@ -9,6 +9,7 @@ impl Plugin for ServerPlugin {
         app.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
             Duration::from_secs_f64(1.0 / 6.0),
         )))
-        .add_systems(Update, systems::hello_server);
+        .insert_resource(Time::<Fixed>::from_seconds(0.5))
+        .add_systems(FixedUpdate, systems::hello_server);
     }
 }

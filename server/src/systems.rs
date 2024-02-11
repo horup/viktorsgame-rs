@@ -1,3 +1,3 @@
 pub fn hello_server() {
-    //println!("hello server");
+    println!("hello server");
 }
