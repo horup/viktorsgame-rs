@@ -1,14 +1,14 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use std::time::Duration;
+use bevy::{app::ScheduleRunnerPlugin, prelude::*};
+mod systems;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub struct ServerPlugin;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl Plugin for ServerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
+            Duration::from_secs_f64(1.0 / 6.0),
+        )))
+        .add_systems(Update, systems::hello_server);
     }
 }

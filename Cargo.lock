@@ -1260,6 +1260,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "client"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "codespan-reporting"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2238,6 +2245,8 @@ name = "main"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "client",
+ "server",
 ]
 
 [[package]]
@@ -2935,6 +2944,13 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]

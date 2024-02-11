@@ -1,14 +1,15 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use bevy::{prelude::*, render::{settings::{Backends, WgpuSettings}, RenderPlugin}};
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub struct ClientPlugin;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl Plugin for ClientPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(DefaultPlugins.set(RenderPlugin {
+            render_creation:bevy::render::settings::RenderCreation::Automatic(WgpuSettings {
+                backends:Some(Backends::DX12),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }));
     }
 }
