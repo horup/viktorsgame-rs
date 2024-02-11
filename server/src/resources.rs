@@ -1,7 +1,14 @@
+use std::sync::{Arc, Mutex};
+
 use bevy::prelude::*;
-use std::sync::Arc;
+
+#[derive(Default)]
+pub struct ConnectionManager {
+
+}
 
 #[derive(Resource)]
-pub struct Runtime {
-    pub rt:tokio::runtime::Runtime
+pub struct WebServer {
+    pub rt:tokio::runtime::Runtime,
+    pub connection_manager:Arc<Mutex<ConnectionManager>>
 }

@@ -11,3 +11,4 @@ hyper = {workspace = true}
 hyper-tungstenite = {workspace = true}
 hyper-util = {workspace = true}
 tokio = {workspace = true}
+uuid = {workspace = true}
