@@ -3277,15 +3277,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_webserver",
- "bincode",
- "futures",
- "http-body-util",
- "hyper",
- "hyper-tungstenite",
- "hyper-util",
  "serde",
- "tokio",
- "uuid",
 ]
 
 [[package]]
