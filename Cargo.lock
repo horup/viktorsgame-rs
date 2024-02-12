@@ -1029,6 +1029,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_webserver"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bincode",
+ "futures",
+ "http-body-util",
+ "hyper",
+ "hyper-tungstenite",
+ "hyper-util",
+ "serde",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "bevy_window"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1067,6 +1083,15 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "winit",
+]
+
+[[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -3251,11 +3276,14 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_webserver",
+ "bincode",
  "futures",
  "http-body-util",
  "hyper",
  "hyper-tungstenite",
  "hyper-util",
+ "serde",
  "tokio",
  "uuid",
 ]
