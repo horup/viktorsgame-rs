@@ -3,9 +3,24 @@ use std::{future::Future, process::Output, sync::{Arc, Mutex}};
 use bevy::prelude::*;
 use crate::{ConnectionManager, WebServer};
 
+type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
+async fn handle_request(connection_manager:Arc<Mutex<ConnectionManager>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
+    if hyper_tungstenite::is_upgrade_request(&request) {
+        //let Ok((response, websocket)) = hyper_tungstenite::upgrade(&mut request, None) else { return Err(Box::new("hehe".to_owned()).into()) };
 
-async fn handle_request(connection_manager:Arc<Mutex<ConnectionManager>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<String>, String> {
-    Err("hello world".to_owned())
+        match hyper_tungstenite::upgrade(&mut request, None) {
+            Ok((response, websocket)) => {
+                return Ok(response);
+            },
+            Err(err) => {
+                return Err(Box::new(err));
+            },
+        }
+
+        // Return the response so the spawned future can continue.
+    } else {
+        Ok(hyper::Response::new(http_body_util::Full::new(hyper::body::Bytes::new())))
+    }
 }
 
 // https://docs.rs/hyper-tungstenite/latest/hyper_tungstenite/

@@ -3209,6 +3209,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "http-body-util",
  "hyper",
  "hyper-tungstenite",
  "hyper-util",
