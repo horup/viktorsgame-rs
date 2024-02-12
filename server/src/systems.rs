@@ -2,7 +2,7 @@ use std::{future::Future, process::Output, sync::{Arc, Mutex}};
 //use futures::sink::SinkExt;
 
 use bevy::prelude::*;
-use futures::{SinkExt, StreamExt};
+use futures::{channel::oneshot::channel, SinkExt, StreamExt};
 use hyper_tungstenite::{tungstenite::Message, HyperWebsocket};
 use crate::{ConnectionManager, WebServer};
 
@@ -12,7 +12,17 @@ async fn serve_websocket(connection_manager:Arc<Mutex<ConnectionManager>>, webso
     if let Ok(websocket) = websocket.await {
         // client connected
         let (mut sink, mut stream) = websocket.split();
-        let _ = sink.send(Message::Text("hello world".to_string())).await;
+        let uuid = uuid::Uuid::new_v4();
+        {
+            let (sender, mut receiver) = tokio::sync::mpsc::channel::<Vec<u8>>(100);
+            let mut connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
+            connection_manager.websocket_connections.insert(uuid, crate::WebsocketConnection { sender, is_connected:true });
+            tokio::spawn(async move {
+                while let Some(msg) = receiver.recv().await {
+                    let res = sink.send(Message::Binary(msg)).await;
+                }
+            });
+        }
         while let Some(message) = stream.next().await {
             let Ok(message) = message else { break; };
             match message {
