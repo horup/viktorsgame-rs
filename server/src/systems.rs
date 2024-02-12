@@ -1,15 +1,41 @@
 use std::{future::Future, process::Output, sync::{Arc, Mutex}};
+//use futures::sink::SinkExt;
 
 use bevy::prelude::*;
+use futures::{SinkExt, StreamExt};
+use hyper_tungstenite::{tungstenite::Message, HyperWebsocket};
 use crate::{ConnectionManager, WebServer};
 
 type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+async fn serve_websocket(connection_manager:Arc<Mutex<ConnectionManager>>, websocket:HyperWebsocket) {
+    if let Ok(websocket) = websocket.await {
+        // client connected
+        let (mut sink, mut stream) = websocket.split();
+        let _ = sink.send(Message::Text("hello world".to_string())).await;
+        while let Some(message) = stream.next().await {
+            let Ok(message) = message else { break; };
+            match message {
+                _=> {
+                    dbg!("message recev");
+                }
+            }
+        }
+    }
+
+    // client disconnect
+}
+
+
 async fn handle_request(connection_manager:Arc<Mutex<ConnectionManager>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
     if hyper_tungstenite::is_upgrade_request(&request) {
         //let Ok((response, websocket)) = hyper_tungstenite::upgrade(&mut request, None) else { return Err(Box::new("hehe".to_owned()).into()) };
 
         match hyper_tungstenite::upgrade(&mut request, None) {
             Ok((response, websocket)) => {
+                tokio::spawn(async move {
+                    serve_websocket(connection_manager, websocket).await;
+                });
                 return Ok(response);
             },
             Err(err) => {
