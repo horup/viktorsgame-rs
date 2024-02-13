@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_webclient::Message;
+use bevy_web_client::Message;
 use futures::{SinkExt, StreamExt};
 use hyper_tungstenite::HyperWebsocket;
 use uuid::Uuid;
@@ -196,11 +196,11 @@ pub struct RecvMsg<T : Message> {
     pub msg:T
 }
 
-pub struct BevyWebserverPlugin<T> {
+pub struct BevyWebServerPlugin<T> {
     pub phantom:PhantomData<T>
 }
 
-impl<T> BevyWebserverPlugin<T> {
+impl<T> BevyWebServerPlugin<T> {
     pub fn new() -> Self {
         Self {
             phantom:PhantomData::default()
@@ -208,7 +208,7 @@ impl<T> BevyWebserverPlugin<T> {
     }
 }
 
-impl<T : Message> Plugin for BevyWebserverPlugin<T> {
+impl<T : Message> Plugin for BevyWebServerPlugin<T> {
     fn build(&self, app: &mut App) {
         let rt = Arc::new(tokio::runtime::Runtime::new().expect("failed to create runtime"));
 

@@ -1,5 +1,5 @@
 use bevy::ecs::{event::EventWriter, system::Res};
-use bevy_webserver::{SendMsg, Connections};
+use bevy_web_server::{SendMsg, Connections};
 
 use crate::Message;
 

@@ -2,7 +2,7 @@ use std::time::Duration;
 use bevy::{app::ScheduleRunnerPlugin, prelude::*};
 mod systems;
 mod resources;
-use bevy_webserver::BevyWebserverPlugin;
+use bevy_web_server::BevyWebServerPlugin;
 pub use resources::*;
 
 use shared::Message;
@@ -12,7 +12,7 @@ pub struct ServerPlugin;
 impl Plugin for ServerPlugin {
     fn build(&self, app: &mut App) {
         app
-        .add_plugins(BevyWebserverPlugin::new() as BevyWebserverPlugin<Message>)
+        .add_plugins(BevyWebServerPlugin::new() as BevyWebServerPlugin<Message>)
         .add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
             Duration::from_millis(1),
         )))

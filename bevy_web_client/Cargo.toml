@@ -1,5 +1,5 @@
 [package]
-name = "bevy_webclient"
+name = "bevy_web_client"
 version = "0.1.0"
 edition = "2021"
 

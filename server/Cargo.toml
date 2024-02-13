@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 shared = {path = "../shared"}
-bevy_webserver = {path = "../bevy_webserver"}
+bevy_web_server = {path = "../bevy_web_server"}
 bevy = {workspace = true}
 serde = {workspace = true}

@@ -1029,7 +1029,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_webclient"
+name = "bevy_web_client"
 version = "0.1.0"
 dependencies = [
  "bevy",
@@ -1038,11 +1038,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_webserver"
+name = "bevy_web_server"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_webclient",
+ "bevy_web_client",
  "bincode",
  "futures",
  "http-body-util",
@@ -3366,7 +3366,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_webserver",
+ "bevy_web_server",
  "serde",
  "shared",
 ]

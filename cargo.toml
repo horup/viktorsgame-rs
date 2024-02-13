@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["main", "shared", "client", "server", "bevy_webserver", "bevy_webclient"]
+members = ["main", "shared", "client", "server", "bevy_web_server", "bevy_web_client"]
 
 [workspace.dependencies]
 bevy = "0.12.1"
