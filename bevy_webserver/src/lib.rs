@@ -139,6 +139,18 @@ fn start_webserver<T: Message>(webserver:ResMut<WebServer<T>>) {
     });
 }
 
+#[derive(Event)]
+pub struct SendMsg<T : Message> {
+    pub connection:Uuid,
+    pub msg:T
+}
+
+#[derive(Event)]
+pub struct RecvMsg<T : Message> {
+    pub connection:Uuid,
+    pub msg:T
+}
+
 pub struct BevyWebserverPlugin<T> {
     pub phantom:PhantomData<T>
 }
@@ -155,11 +167,16 @@ impl<T> BevyWebserverPlugin<T> {
 impl<T : Message> Plugin for BevyWebserverPlugin<T> {
     fn build(&self, app: &mut App) {
         let rt = Arc::new(tokio::runtime::Runtime::new().expect("failed to create runtime"));
+
+        app.add_event::<SendMsg<T>>();
+        app.add_event::<RecvMsg<T>>();
+
         app.insert_resource::<WebServer<T>>(WebServer {
             rt:rt.clone(),
             connection_manager:Arc::new(std::sync::Mutex::new(ConnectionManager::new(rt.clone())))
-        })
-        .add_systems(Startup, start_webserver::<T>);
+        });
+
+        app.add_systems(Startup, start_webserver::<T>);
 
     }
 }
