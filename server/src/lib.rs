@@ -1,8 +1,8 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 use bevy::{app::ScheduleRunnerPlugin, prelude::*};
 mod systems;
 mod resources;
-use bevy_webserver::BevyWebserver;
+use bevy_webserver::BevyWebserverPlugin;
 pub use resources::*;
 
 pub struct ServerPlugin;
@@ -17,7 +17,7 @@ pub enum Message {
 impl Plugin for ServerPlugin {
     fn build(&self, app: &mut App) {
         app
-        .add_plugins(BevyWebserver::new() as BevyWebserver<Message>)
+        .add_plugins(BevyWebserverPlugin::new() as BevyWebserverPlugin<Message>)
         .add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
             Duration::from_millis(1),
         )))

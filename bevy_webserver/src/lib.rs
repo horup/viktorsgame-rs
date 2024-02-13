@@ -40,6 +40,16 @@ pub struct WebServer<T> {
     connection_manager:Arc<Mutex<ConnectionManager<T>>>,
 }
 
+impl<T> WebServer<T> {
+    pub fn connections(&self) -> Vec<Uuid> {
+        let mut connections = Vec::default();
+        for (uuid, _) in self.connection_manager.lock().unwrap().websocket_connections.iter() {
+            connections.push(uuid.clone());
+        }
+        connections
+    }
+}
+
 type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, websocket:HyperWebsocket) {
@@ -129,11 +139,11 @@ fn start_webserver<T: Message>(webserver:ResMut<WebServer<T>>) {
     });
 }
 
-pub struct BevyWebserver<T> {
+pub struct BevyWebserverPlugin<T> {
     pub phantom:PhantomData<T>
 }
 
-impl<T> BevyWebserver<T> {
+impl<T> BevyWebserverPlugin<T> {
     pub fn new() -> Self {
         Self {
             phantom:PhantomData::default()
@@ -142,7 +152,7 @@ impl<T> BevyWebserver<T> {
 }
 
 
-impl<T : Message> Plugin for BevyWebserver<T> {
+impl<T : Message> Plugin for BevyWebserverPlugin<T> {
     fn build(&self, app: &mut App) {
         let rt = Arc::new(tokio::runtime::Runtime::new().expect("failed to create runtime"));
         app.insert_resource::<WebServer<T>>(WebServer {
