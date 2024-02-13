@@ -5,14 +5,9 @@ mod resources;
 use bevy_webserver::BevyWebserverPlugin;
 pub use resources::*;
 
+use shared::Message;
 pub struct ServerPlugin;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone)]
-pub enum Message {
-    Hello(String)
-}
 
 impl Plugin for ServerPlugin {
     fn build(&self, app: &mut App) {

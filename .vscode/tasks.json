@@ -8,6 +8,14 @@
 				"$rustc"
 			],
 			"label": "rust: cargo run"
+		},
+		{
+			"type": "cargo",
+			"command": "check",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "rust: cargo check"
 		}
 	]
 }
