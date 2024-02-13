@@ -2,42 +2,60 @@ use bevy::prelude::*;
 use bevy_webclient::Message;
 use futures::{SinkExt, StreamExt};
 use hyper_tungstenite::HyperWebsocket;
-use serde::{de::DeserializeOwned, Serialize};
 use uuid::Uuid;
 use std::{collections::HashMap, marker::PhantomData, sync::{Arc, Mutex}};
 
 pub struct WebsocketConnection<T>  {
-    pub sender:tokio::sync::mpsc::Sender<T>,
-    pub is_connected:bool
+    rt:Arc<tokio::runtime::Runtime>,
+    sender:tokio::sync::mpsc::Sender<T>,
+    is_connected:bool,
+    messages:Vec<T>
+}
+impl<T : Message> WebsocketConnection<T> {
+    pub fn send(&mut self, msg:T) {
+        if self.is_connected {
+            let sender = self.sender.clone();
+            self.rt.spawn(async move {
+                let _ = sender.send(msg).await;
+            });
+        }
+    }
 }
 pub struct ConnectionManager<T> {
-    pub websocket_connections:HashMap<Uuid, WebsocketConnection<T>>
+    rt:Arc<tokio::runtime::Runtime>,
+    websocket_connections:HashMap<Uuid, WebsocketConnection<T>>
 }
-impl<T : Send + Sync> Default for ConnectionManager<T> {
-    fn default() -> Self {
-        Self { websocket_connections: Default::default() }
+impl<T> ConnectionManager<T> {
+    pub fn new(rt:Arc<tokio::runtime::Runtime>) -> Self {
+        Self {
+            rt,
+            websocket_connections: Default::default(),
+        }
     }
 }
 
 #[derive(Resource)]
 pub struct WebServer<T> {
-    pub rt:tokio::runtime::Runtime,
-    pub connection_manager:Arc<Mutex<ConnectionManager<T>>>,
+    rt:Arc<tokio::runtime::Runtime>,
+    connection_manager:Arc<Mutex<ConnectionManager<T>>>,
 }
 
 type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, websocket:HyperWebsocket) {
     if let Ok(websocket) = websocket.await {
-        // client connected
         let (mut sink, mut stream) = websocket.split();
         let uuid = uuid::Uuid::new_v4();
         {
+            // insert new connection
             let (sender, mut receiver) = tokio::sync::mpsc::channel::<T>(100);
             let mut connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
-            connection_manager.websocket_connections.insert(uuid, crate::WebsocketConnection { sender, is_connected:true });
+            let rt = connection_manager.rt.clone();
+            connection_manager.websocket_connections.insert(uuid, crate::WebsocketConnection { sender, is_connected:true, messages:Vec::with_capacity(64), rt });
 
+            // wait for messages and send them through the websocket
             tokio::spawn(async move {
+                println!("{} Connected", uuid);
                 while let Some(msg) = receiver.recv().await {
                     let Ok(bytes) = bincode::serialize(&msg) else { break; };
                     if sink.send(hyper_tungstenite::tungstenite::Message::Binary(bytes)).await.is_err() {
@@ -54,22 +72,23 @@ async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<ConnectionMan
             let Ok(message) = message else { break; };
             match message {
                 hyper_tungstenite::tungstenite::Message::Binary(bytes)=> {
-                    let connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
-                    dbg!("message recev");
+                    let mut connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
+                    let Ok(msg) = bincode::deserialize::<T>(&bytes) else {break;};
+                    connection_manager.websocket_connections.get_mut(&uuid).expect("failed to get WebSocketConnection").messages.push(msg);
                 },
                 _=>{}
             }
         }
-    }
 
-    // client disconnect
+        let mut connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
+        connection_manager.websocket_connections.get_mut(&uuid).expect("failed to get WebSocketConnection").is_connected = false;
+        println!("{} Disconnected", uuid);
+    }
 }
 
 
-async fn handle_request<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
+async fn handle_http_request<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
     if hyper_tungstenite::is_upgrade_request(&request) {
-        //let Ok((response, websocket)) = hyper_tungstenite::upgrade(&mut request, None) else { return Err(Box::new("hehe".to_owned()).into()) };
-
         match hyper_tungstenite::upgrade(&mut request, None) {
             Ok((response, websocket)) => {
                 tokio::spawn(async move {
@@ -81,8 +100,6 @@ async fn handle_request<T : Message>(connection_manager:Arc<Mutex<ConnectionMana
                 return Err(Box::new(err));
             },
         }
-
-        // Return the response so the spawned future can continue.
     } else {
         Ok(hyper::Response::new(http_body_util::Full::new(hyper::body::Bytes::new())))
     }
@@ -100,7 +117,7 @@ fn start_webserver<T: Message>(webserver:ResMut<WebServer<T>>) {
             let connection_manager = connection_manager.clone();
             let connection = http
             .serve_connection(hyper_util::rt::TokioIo::new(stream), hyper::service::service_fn(move |request: hyper::Request<hyper::body::Incoming>| {
-                handle_request(connection_manager.clone(), request)
+                handle_http_request(connection_manager.clone(), request)
             }))
             .with_upgrades();
             tokio::spawn(async move {
@@ -127,10 +144,12 @@ impl<T> BevyWebserver<T> {
 
 impl<T : Message> Plugin for BevyWebserver<T> {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, start_webserver::<T>);
+        let rt = Arc::new(tokio::runtime::Runtime::new().expect("failed to create runtime"));
         app.insert_resource::<WebServer<T>>(WebServer {
-            rt:tokio::runtime::Runtime::new().expect("failed to create runtime"),
-            connection_manager:Arc::new(std::sync::Mutex::new(Default::default()))
-        });
+            rt:rt.clone(),
+            connection_manager:Arc::new(std::sync::Mutex::new(ConnectionManager::new(rt.clone())))
+        })
+        .add_systems(Startup, start_webserver::<T>);
+
     }
 }
