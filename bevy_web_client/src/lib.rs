@@ -110,6 +110,8 @@ impl<T> BevyWebClientPlugin<T> {
 }
 impl<T:Message> Plugin for BevyWebClientPlugin<T> {
     fn build(&self, app: &mut App) {
+        app.add_event::<SendMsg<T>>();
+        app.add_event::<RecvMsg<T>>();
         app.insert_resource(WebClientInfo {
             url:"ws://localhost:8080".to_string(),
             is_connected:false
