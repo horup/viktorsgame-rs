@@ -36,7 +36,7 @@ struct Client {
 }
 
 
-fn recv_messages(mut info:ResMut<WebClientInfo>, mut client:ResMut<Client>) {
+fn recv_messages<T:Message>(mut info:ResMut<WebClientInfo>, mut client:ResMut<Client>, mut recv_writer:EventWriter<RecvMsg<T>>) {
     if info.url != client.url {
         client.socket = None;
     }
@@ -58,8 +58,14 @@ fn recv_messages(mut info:ResMut<WebClientInfo>, mut client:ResMut<Client>) {
                 ewebsock::WsEvent::Opened => {
                     info.is_connected = true;
                 },
-                ewebsock::WsEvent::Message(_) => {
-                    dbg!("hihi");
+                ewebsock::WsEvent::Message(msg) => {
+                    match msg {
+                        ewebsock::WsMessage::Binary(bytes) => {
+                            let Ok(msg) = bincode::deserialize::<T>(&bytes) else { break; };
+                            recv_writer.send(RecvMsg { msg: msg });
+                        },
+                        _=>{}
+                    }
                 },
                 ewebsock::WsEvent::Error(_) => {
                     recreate = true;
@@ -78,8 +84,18 @@ fn recv_messages(mut info:ResMut<WebClientInfo>, mut client:ResMut<Client>) {
     }
 }
 
-fn send_messages() {
+fn send_messages<T:Message>(mut send_writer:EventReader<SendMsg<T>>, client:ResMut<Client>) {
+    let mut messages = Vec::with_capacity(64);
+    for msg in send_writer.read() {
+        messages.push(&msg.msg);
+    }
 
+    let Some(socket) = &client.socket else { return; };
+    let mut socket = socket.lock().expect("could not lock socket");
+    for msg in messages.drain(..) {
+        let Ok(bytes) = bincode::serialize(&msg) else { continue; };
+        socket.sender.send(ewebsock::WsMessage::Binary(bytes));
+    }
 }
 
 pub struct BevyWebClientPlugin<T> {
@@ -102,7 +118,7 @@ impl<T:Message> Plugin for BevyWebClientPlugin<T> {
             url:Default::default(),
             socket:None
         });
-        app.add_systems(First, recv_messages);
-        app.add_systems(First, send_messages);
+        app.add_systems(First, recv_messages::<T>);
+        app.add_systems(Last, send_messages::<T>);
     }
 }
