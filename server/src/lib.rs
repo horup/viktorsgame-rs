@@ -9,7 +9,7 @@ pub struct ServerPlugin;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Message {
     Hello(String)
 }

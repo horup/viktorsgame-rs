@@ -3,7 +3,7 @@ use bevy_webclient::Message;
 use futures::{SinkExt, StreamExt};
 use hyper_tungstenite::HyperWebsocket;
 use uuid::Uuid;
-use std::{collections::HashMap, marker::PhantomData, sync::{Arc, Mutex}};
+use std::{collections::HashMap, marker::PhantomData, mem, sync::{Arc, Mutex}};
 
 pub struct WebsocketConnection<T>  {
     rt:Arc<tokio::runtime::Runtime>,
@@ -139,6 +139,27 @@ fn start_webserver<T: Message>(webserver:ResMut<WebServer<T>>) {
     });
 }
 
+fn recv_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut recv_writer:EventWriter<RecvMsg<T>>) {
+    let mut conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
+    for (uuid, conn) in conn_manager.websocket_connections.iter_mut() {
+        for msg in conn.messages.drain(..) {
+            recv_writer.send(RecvMsg {
+                connection:uuid.clone(),
+                msg
+            });
+        }
+    }
+}
+
+fn send_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut send_writer:EventReader<SendMsg<T>>) {
+    let mut conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
+    for send in send_writer.read() {
+        if let Some(conn) = conn_manager.websocket_connections.get_mut(&send.connection) {
+            conn.send(send.msg.clone());
+        }
+    }
+}
+
 #[derive(Event)]
 pub struct SendMsg<T : Message> {
     pub connection:Uuid,
@@ -163,7 +184,6 @@ impl<T> BevyWebserverPlugin<T> {
     }
 }
 
-
 impl<T : Message> Plugin for BevyWebserverPlugin<T> {
     fn build(&self, app: &mut App) {
         let rt = Arc::new(tokio::runtime::Runtime::new().expect("failed to create runtime"));
@@ -177,6 +197,7 @@ impl<T : Message> Plugin for BevyWebserverPlugin<T> {
         });
 
         app.add_systems(Startup, start_webserver::<T>);
-
+        app.add_systems(First, recv_messages::<T>);
+        app.add_systems(First, send_messages::<T>);
     }
 }
