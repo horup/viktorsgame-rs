@@ -21,11 +21,11 @@ impl<T : Message> WebsocketConnection<T> {
         }
     }
 }
-pub struct ConnectionManager<T> {
+pub struct WebServerConnectionManager<T> {
     rt:Arc<tokio::runtime::Runtime>,
     websocket_connections:HashMap<Uuid, WebsocketConnection<T>>
 }
-impl<T> ConnectionManager<T> {
+impl<T> WebServerConnectionManager<T> {
     pub fn new(rt:Arc<tokio::runtime::Runtime>) -> Self {
         Self {
             rt,
@@ -35,9 +35,19 @@ impl<T> ConnectionManager<T> {
 }
 
 #[derive(Resource)]
-pub struct WebServer<T> {
+struct WebServer<T> {
     rt:Arc<tokio::runtime::Runtime>,
-    connection_manager:Arc<Mutex<ConnectionManager<T>>>,
+    connection_manager:Arc<Mutex<WebServerConnectionManager<T>>>,
+}
+
+
+pub struct Connection {
+    pub id:Uuid
+}
+
+#[derive(Resource)]
+pub struct Connections {
+    pub connections:HashMap<Uuid, Connection>
 }
 
 impl<T> WebServer<T> {
@@ -52,7 +62,7 @@ impl<T> WebServer<T> {
 
 type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, websocket:HyperWebsocket) {
+async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<WebServerConnectionManager<T>>>, websocket:HyperWebsocket) {
     if let Ok(websocket) = websocket.await {
         let (mut sink, mut stream) = websocket.split();
         let uuid = uuid::Uuid::new_v4();
@@ -97,7 +107,7 @@ async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<ConnectionMan
 }
 
 
-async fn handle_http_request<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
+async fn handle_http_request<T : Message>(connection_manager:Arc<Mutex<WebServerConnectionManager<T>>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
     if hyper_tungstenite::is_upgrade_request(&request) {
         match hyper_tungstenite::upgrade(&mut request, None) {
             Ok((response, websocket)) => {
@@ -137,6 +147,19 @@ fn start_webserver<T: Message>(webserver:ResMut<WebServer<T>>) {
             });
         }
     });
+}
+
+fn check_connections<T: Message>(webserver:ResMut<WebServer<T>>, mut connections:ResMut<Connections>) {
+    let conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
+    for (id, conn) in conn_manager.websocket_connections.iter() {
+        if conn.is_connected == false {
+            connections.connections.remove(id);
+        } else {
+            connections.connections.insert(id.clone(), Connection {
+                id: id.clone(),
+            });
+        }
+    }
 }
 
 fn recv_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut recv_writer:EventWriter<RecvMsg<T>>) {
@@ -192,13 +215,16 @@ impl<T : Message> Plugin for BevyWebserverPlugin<T> {
         app.add_event::<SendMsg<T>>();
         app.add_event::<RecvMsg<T>>();
 
+        app.insert_resource(Connections {
+           connections:Default::default() 
+        });
         app.insert_resource::<WebServer<T>>(WebServer {
             rt:rt.clone(),
-            connection_manager:Arc::new(std::sync::Mutex::new(ConnectionManager::new(rt.clone())))
+            connection_manager:Arc::new(std::sync::Mutex::new(WebServerConnectionManager::new(rt.clone())))
         });
 
         app.add_systems(Startup, start_webserver::<T>);
-        app.add_systems(First, recv_messages::<T>);
-        app.add_systems(First, send_messages::<T>);
+        app.add_systems(First, (check_connections::<T>, recv_messages::<T>));
+        app.add_systems(Last, send_messages::<T>);
     }
 }
