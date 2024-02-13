@@ -85,6 +85,13 @@ fn send_messages() {
 pub struct BevyWebClientPlugin<T> {
     phantom:PhantomData<T>
 }
+impl<T> BevyWebClientPlugin<T> {
+    pub fn new() -> Self {
+        Self {
+            phantom:PhantomData::default()
+        }
+    }
+}
 impl<T:Message> Plugin for BevyWebClientPlugin<T> {
     fn build(&self, app: &mut App) {
         app.insert_resource(WebClientInfo {
