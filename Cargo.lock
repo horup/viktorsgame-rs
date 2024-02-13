@@ -1029,10 +1029,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_webclient"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bevy_webserver"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_webclient",
  "bincode",
  "futures",
  "http-body-util",

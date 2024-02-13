@@ -1,12 +1,10 @@
-use bevy::{prelude::*, reflect::erased_serde::Serialize};
-use futures::StreamExt;
+use bevy::prelude::*;
+use bevy_webclient::Message;
+use futures::{SinkExt, StreamExt};
 use hyper_tungstenite::HyperWebsocket;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Serialize};
 use uuid::Uuid;
 use std::{collections::HashMap, marker::PhantomData, sync::{Arc, Mutex}};
-
-pub trait Message : Send + Sync + Serialize + DeserializeOwned + 'static {}
-impl<T> Message for T where T : Send + Sync + Serialize + DeserializeOwned + 'static {}
 
 pub struct WebsocketConnection<T>  {
     pub sender:tokio::sync::mpsc::Sender<T>,
@@ -29,7 +27,7 @@ pub struct WebServer<T> {
 
 type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-async fn serve_websocket<T : Send + Sync + 'static>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, websocket:HyperWebsocket) {
+async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, websocket:HyperWebsocket) {
     if let Ok(websocket) = websocket.await {
         // client connected
         let (mut sink, mut stream) = websocket.split();
@@ -38,18 +36,28 @@ async fn serve_websocket<T : Send + Sync + 'static>(connection_manager:Arc<Mutex
             let (sender, mut receiver) = tokio::sync::mpsc::channel::<T>(100);
             let mut connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
             connection_manager.websocket_connections.insert(uuid, crate::WebsocketConnection { sender, is_connected:true });
+
             tokio::spawn(async move {
                 while let Some(msg) = receiver.recv().await {
-                    //let res = sink.send(Message::Binary(msg)).await;
+                    let Ok(bytes) = bincode::serialize(&msg) else { break; };
+                    if sink.send(hyper_tungstenite::tungstenite::Message::Binary(bytes)).await.is_err() {
+                        break;
+                    }
                 }
+
+                let _ = sink.close().await;
             });
+            
         }
+
         while let Some(message) = stream.next().await {
             let Ok(message) = message else { break; };
             match message {
-                _=> {
+                hyper_tungstenite::tungstenite::Message::Binary(bytes)=> {
+                    let connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
                     dbg!("message recev");
-                }
+                },
+                _=>{}
             }
         }
     }
@@ -58,7 +66,7 @@ async fn serve_websocket<T : Send + Sync + 'static>(connection_manager:Arc<Mutex
 }
 
 
-async fn handle_request<T : Send + Sync + 'static>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
+async fn handle_request<T : Message>(connection_manager:Arc<Mutex<ConnectionManager<T>>>, mut request: hyper::Request<hyper::body::Incoming>) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, Error> {
     if hyper_tungstenite::is_upgrade_request(&request) {
         //let Ok((response, websocket)) = hyper_tungstenite::upgrade(&mut request, None) else { return Err(Box::new("hehe".to_owned()).into()) };
 
