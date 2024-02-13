@@ -170,7 +170,6 @@ fn recv_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut recv_writer:Eve
                 connection:uuid.clone(),
                 msg
             });
-            dbg!("msg recv");
         }
     }
 }
