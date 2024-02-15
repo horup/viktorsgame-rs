@@ -17,6 +17,7 @@ impl Plugin for ServerPlugin {
             Duration::from_millis(1),
         )))
         .insert_resource(Time::<Fixed>::from_seconds(0.1))
-        .add_systems(FixedUpdate, systems::hello_server);
+        .add_systems(Startup, systems::start)
+        .add_systems(FixedUpdate, systems::transmit);
     }
 }

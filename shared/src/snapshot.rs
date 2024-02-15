@@ -1,9 +1,9 @@
 use bevy::ecs::entity::Entity;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Snapshot {
-
+    pub entities:Vec<EntitySnapshot>
 }
 
 #[derive(Serialize, Deserialize, Clone)]
