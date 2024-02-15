@@ -1,3 +1,5 @@
+mod systems;
+pub use systems::*;
 use bevy::{prelude::*, render::{settings::{Backends, WgpuSettings}, RenderPlugin}};
 use bevy_web_client::{BevyWebClientPlugin, SendMsg};
 use shared::Message;
@@ -12,11 +14,12 @@ impl Plugin for ClientPlugin {
         app.add_plugins(BevyWebClientPlugin::new() as BevyWebClientPlugin<shared::Message>);
         app.add_plugins(DefaultPlugins.set(RenderPlugin {
             render_creation:bevy::render::settings::RenderCreation::Automatic(WgpuSettings {
-                backends:Some(Backends::DX12),
+                backends:Some(Backends::VULKAN),
                 ..Default::default()
             }),
             ..Default::default()
         }));
+        app.add_systems(Startup, setup);
         app.add_systems(Update, test);
     }
 }
