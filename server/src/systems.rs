@@ -18,13 +18,26 @@ pub fn start(mut commands:Commands) {
 }
 
 type O<T> = Option<T>;
-pub fn transmit(connections:Res<Connections>, mut send_writer:EventWriter<SendMsg<Message>>, entities:Query<(Entity, O<&Thing>, O<&Player>)>) {
+pub fn transmit(connections:Res<Connections>, mut send_writer:EventWriter<SendMsg<Message>>, replicates:Query<(Entity, O<&Thing>, O<&Player>), With<Replicate>>) {
+    // create complete snapshot
     let mut snapshot = Snapshot::default();
-    /*for (id, _) in connections.connections.iter() {
-        send_writer.send(SendMsg { connection: id.clone(), msg: Message::Hello("Hello from Server".to_string()) });
+    for (id, thing, player) in replicates.iter() {
+        snapshot.entities.push(EntitySnapshot {
+            id,
+            thing: thing.map(|thing| ThingSnapshot {
+                x: Some(thing.pos.x),
+                y: Some(thing.pos.y),
+                vx: Some(thing.vel.x),
+                vy: Some(thing.vel.y),
+            }),
+            player: player.map(|player| PlayerSnapshot {
+                name: Some(player.name.clone()),
+            }),
+        })
     }
 
-    for msg in recv_reader.read() {
-        println!("from {} = {:?}", msg.connection, msg.msg);
-    }*/
+    // send snapshot
+    for (id, _) in connections.connections.iter() {
+        send_writer.send(SendMsg { connection: id.clone(), msg: Message::CompleteSnapshot(snapshot.clone()) });
+    }
 }

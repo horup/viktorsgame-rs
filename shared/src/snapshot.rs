@@ -16,7 +16,7 @@ pub struct ThingSnapshot {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PlayerSnapshot {
-    pub name:Option<f32>
+    pub name:Option<String>
 }
 
 #[derive(Serialize, Deserialize, Clone)]

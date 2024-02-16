@@ -1,5 +1,8 @@
 use serde::{Serialize, Deserialize};
-#[derive(Serialize, Deserialize, Clone, Debug)]
+
+use crate::Snapshot;
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Message {
-    Hello(String)
+    Hello(String),
+    CompleteSnapshot(Snapshot)
 }
