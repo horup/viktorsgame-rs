@@ -4,8 +4,17 @@ use shared::*;
 
 use crate::Message;
 
-pub fn start() {
-
+pub fn start(mut commands:Commands) {
+    for i in 0..10 {
+        let r = 10.0;
+        let x = rand::random::<f32>() * r - r / 2.0;
+        let y = rand::random::<f32>() * r - r / 2.0;
+        let p = shared::glam::Vec3::new(x, y, 0.0);
+        commands.spawn(Thing {
+            pos: p,
+            vel: Default::default()
+        }).insert(Replicate);
+    }
 }
 
 type O<T> = Option<T>;

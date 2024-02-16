@@ -9,3 +9,4 @@ edition = "2021"
 bevy = {workspace = true}
 serde = {workspace = true}
 glam = {workspace = true}
+rand = {workspace = true}

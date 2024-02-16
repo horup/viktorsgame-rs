@@ -723,7 +723,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58ddc2b76783939c530178f88e5711a1b01044d7b02db4033e2eb8b43b6cf4ec"
 dependencies = [
- "glam 0.24.2",
+ "glam",
  "serde",
 ]
 
@@ -733,7 +733,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ec4962977a746d870170532fc92759e04d3dbcae8b7b82e7ca3bb83b1d75277"
 dependencies = [
- "glam 0.24.2",
+ "glam",
 ]
 
 [[package]]
@@ -780,7 +780,7 @@ dependencies = [
  "bevy_utils",
  "downcast-rs",
  "erased-serde",
- "glam 0.24.2",
+ "glam",
  "serde",
  "smallvec",
  "smol_str",
@@ -1587,7 +1587,7 @@ checksum = "8fce2eeef77fd4a293a54b62aa00ac9daebfbcda4bf8998c5a815635b004aa1c"
 dependencies = [
  "const_panic",
  "encase_derive",
- "glam 0.24.2",
+ "glam",
  "thiserror",
 ]
 
@@ -1986,12 +1986,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glam"
-version = "0.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "151665d9be52f9bb40fc7966565d39666f2d1e69233571b71b87791c7e0528b3"
-
-[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2172,7 +2166,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cb3df16a7bcb1b5bc092abd55e14f77ca70aea14445026e264586fc62889a10"
 dependencies = [
  "constgebra",
- "glam 0.24.2",
+ "glam",
 ]
 
 [[package]]
@@ -3405,7 +3399,8 @@ name = "shared"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "glam 0.25.0",
+ "glam",
+ "rand",
  "serde",
 ]
 

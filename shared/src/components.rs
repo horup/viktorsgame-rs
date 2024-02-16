@@ -12,6 +12,4 @@ pub struct Thing {
 }
 
 #[derive(Component)]
-pub struct Replicate {
-    pub server_id:Entity
-}
+pub struct Replicate;
