@@ -162,11 +162,11 @@ fn check_connections<T: Message>(webserver:ResMut<WebServer<T>>, mut connections
     }
 }
 
-fn recv_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut recv_writer:EventWriter<RecvMsg<T>>) {
+fn recv_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut recv_writer:EventWriter<RecvPacket<T>>) {
     let mut conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
     for (uuid, conn) in conn_manager.websocket_connections.iter_mut() {
         for msg in conn.messages.drain(..) {
-            recv_writer.send(RecvMsg {
+            recv_writer.send(RecvPacket {
                 connection:uuid.clone(),
                 msg
             });
@@ -174,7 +174,7 @@ fn recv_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut recv_writer:Eve
     }
 }
 
-fn send_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut send_writer:EventReader<SendMsg<T>>) {
+fn send_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut send_writer:EventReader<SendPacket<T>>) {
     let mut conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
     for send in send_writer.read() {
         if let Some(conn) = conn_manager.websocket_connections.get_mut(&send.connection) {
@@ -184,13 +184,13 @@ fn send_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut send_writer:Eve
 }
 
 #[derive(Event)]
-pub struct SendMsg<T : Message> {
+pub struct SendPacket<T : Message> {
     pub connection:Uuid,
     pub msg:T
 }
 
 #[derive(Event)]
-pub struct RecvMsg<T : Message> {
+pub struct RecvPacket<T : Message> {
     pub connection:Uuid,
     pub msg:T
 }
@@ -211,8 +211,8 @@ impl<T : Message> Plugin for BevyWebServerPlugin<T> {
     fn build(&self, app: &mut App) {
         let rt = Arc::new(tokio::runtime::Runtime::new().expect("failed to create runtime"));
 
-        app.add_event::<SendMsg<T>>();
-        app.add_event::<RecvMsg<T>>();
+        app.add_event::<SendPacket<T>>();
+        app.add_event::<RecvPacket<T>>();
 
         app.insert_resource(Connections {
            connections:Default::default() 
