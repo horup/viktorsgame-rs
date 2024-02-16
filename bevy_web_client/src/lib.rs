@@ -18,7 +18,7 @@ pub struct SendMsg<T:Message> {
 }
 
 #[derive(Event)]
-pub struct RecvMsg<T:Message> {
+pub struct RecvPacket<T:Message> {
     pub msg:T
 }
 
@@ -36,7 +36,7 @@ struct Client {
 }
 
 
-fn recv_messages<T:Message>(mut info:ResMut<WebClientInfo>, mut client:ResMut<Client>, mut recv_writer:EventWriter<RecvMsg<T>>) {
+fn recv_messages<T:Message>(mut info:ResMut<WebClientInfo>, mut client:ResMut<Client>, mut recv_writer:EventWriter<RecvPacket<T>>) {
     if info.url != client.url {
         client.socket = None;
     }
@@ -62,7 +62,7 @@ fn recv_messages<T:Message>(mut info:ResMut<WebClientInfo>, mut client:ResMut<Cl
                     match msg {
                         ewebsock::WsMessage::Binary(bytes) => {
                             let Ok(msg) = bincode::deserialize::<T>(&bytes) else { break; };
-                            recv_writer.send(RecvMsg { msg: msg });
+                            recv_writer.send(RecvPacket { msg: msg });
                         },
                         _=>{}
                     }
@@ -111,7 +111,7 @@ impl<T> BevyWebClientPlugin<T> {
 impl<T:Message> Plugin for BevyWebClientPlugin<T> {
     fn build(&self, app: &mut App) {
         app.add_event::<SendMsg<T>>();
-        app.add_event::<RecvMsg<T>>();
+        app.add_event::<RecvPacket<T>>();
         app.insert_resource(WebClientInfo {
             url:"ws://localhost:8080".to_string(),
             is_connected:false
