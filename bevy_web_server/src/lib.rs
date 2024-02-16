@@ -9,6 +9,7 @@ pub struct WebsocketConnection<T>  {
     rt:Arc<tokio::runtime::Runtime>,
     sender:tokio::sync::mpsc::Sender<T>,
     is_connected:bool,
+    entity:Option<Entity>,
     messages:Vec<T>
 }
 impl<T : Message> WebsocketConnection<T> {
@@ -40,14 +41,9 @@ struct WebServer<T> {
     connection_manager:Arc<Mutex<WebServerConnectionManager<T>>>,
 }
 
-
+#[derive(Component)]
 pub struct Connection {
     pub id:Uuid
-}
-
-#[derive(Resource)]
-pub struct Connections {
-    pub connections:HashMap<Uuid, Connection>
 }
 
 impl<T> WebServer<T> {
@@ -71,11 +67,10 @@ async fn serve_websocket<T : Message>(connection_manager:Arc<Mutex<WebServerConn
             let (sender, mut receiver) = tokio::sync::mpsc::channel::<T>(100);
             let mut connection_manager = connection_manager.lock().expect("could not acquire mutex in serve_websocket");
             let rt = connection_manager.rt.clone();
-            connection_manager.websocket_connections.insert(uuid, crate::WebsocketConnection { sender, is_connected:true, messages:Vec::with_capacity(64), rt });
+            connection_manager.websocket_connections.insert(uuid, crate::WebsocketConnection { sender, is_connected:true, messages:Vec::with_capacity(64), rt, entity:None });
 
             // wait for messages and send them through the websocket
             tokio::spawn(async move {
-                println!("{} Connected", uuid);
                 while let Some(msg) = receiver.recv().await {
                     let Ok(bytes) = bincode::serialize(&msg) else { break; };
                     if sink.send(hyper_tungstenite::tungstenite::Message::Binary(bytes)).await.is_err() {
@@ -149,16 +144,29 @@ fn start_webserver<T: Message>(webserver:ResMut<WebServer<T>>) {
     });
 }
 
-fn check_connections<T: Message>(webserver:ResMut<WebServer<T>>, mut connections:ResMut<Connections>) {
-    let conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
-    for (id, conn) in conn_manager.websocket_connections.iter() {
+fn check_connections<T: Message>(webserver:ResMut<WebServer<T>>, mut connections:Query<&mut Connection>, mut commands:Commands) {
+    let mut conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
+    let mut delete = Vec::default();
+    for (id, conn) in conn_manager.websocket_connections.iter_mut() {
         if conn.is_connected == false {
-            connections.connections.remove(id);
+            delete.push(id.clone());
+            if let Some(entity) = conn.entity {
+                if let Some(e) =  commands.get_entity(entity) {
+                    e.despawn_recursive();
+                }
+            }
         } else {
-            connections.connections.insert(id.clone(), Connection {
-                id: id.clone(),
-            });
+            if conn.entity.is_none() {
+                let e = commands.spawn(Connection {
+                    id: id.clone(),
+                }).id();
+                conn.entity = Some(e);
+            }
         }
+    }
+
+    for id in delete.drain(..) {
+        conn_manager.websocket_connections.remove(&id);
     }
 }
 
@@ -177,7 +185,7 @@ fn recv_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut recv_writer:Eve
 fn send_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut send_writer:EventReader<SendPacket<T>>) {
     let mut conn_manager = webserver.connection_manager.lock().expect("could not lock ConnectionManager");
     for send in send_writer.read() {
-        if let Some(conn) = conn_manager.websocket_connections.get_mut(&send.connection) {
+        if let Some(conn) = conn_manager.websocket_connections.get_mut(&send.connection_id) {
             conn.send(send.msg.clone());
         }
     }
@@ -185,7 +193,7 @@ fn send_messages<T: Message>(webserver:ResMut<WebServer<T>>, mut send_writer:Eve
 
 #[derive(Event)]
 pub struct SendPacket<T : Message> {
-    pub connection:Uuid,
+    pub connection_id:Uuid,
     pub msg:T
 }
 
@@ -210,13 +218,8 @@ impl<T> BevyWebServerPlugin<T> {
 impl<T : Message> Plugin for BevyWebServerPlugin<T> {
     fn build(&self, app: &mut App) {
         let rt = Arc::new(tokio::runtime::Runtime::new().expect("failed to create runtime"));
-
         app.add_event::<SendPacket<T>>();
         app.add_event::<RecvPacket<T>>();
-
-        app.insert_resource(Connections {
-           connections:Default::default() 
-        });
         app.insert_resource::<WebServer<T>>(WebServer {
             rt:rt.clone(),
             connection_manager:Arc::new(std::sync::Mutex::new(WebServerConnectionManager::new(rt.clone())))

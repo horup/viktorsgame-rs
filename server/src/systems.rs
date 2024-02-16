@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_web_server::{Connections, RecvPacket, SendPacket};
+use bevy_web_server::{Connection, RecvPacket, SendPacket};
 use shared::*;
 
 use crate::Message;
@@ -22,7 +22,7 @@ pub fn start(mut commands: Commands) {
 
 type O<T> = Option<T>;
 pub fn transmit(
-    connections: Res<Connections>,
+    connections: Query<&Connection>,
     mut send_writer: EventWriter<SendPacket<Message>>,
     replicates: Query<(Entity, O<&Thing>, O<&Player>), With<Replicate>>,
 ) {
@@ -44,9 +44,9 @@ pub fn transmit(
     }
 
     // send snapshot
-    for (id, _) in connections.connections.iter() {
+    for connection in connections.iter() {
         send_writer.send(SendPacket {
-            connection: id.clone(),
+            connection_id: connection.id.clone(),
             msg: Message::CompleteSnapshot(snapshot.clone()),
         });
     }
