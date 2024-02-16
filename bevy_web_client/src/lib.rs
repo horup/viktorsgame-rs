@@ -13,7 +13,7 @@ pub struct WebClientInfo {
 }
 
 #[derive(Event)]
-pub struct SendMsg<T:Message> {
+pub struct SendPacket<T:Message> {
     pub msg:T
 }
 
@@ -84,7 +84,7 @@ fn recv_messages<T:Message>(mut info:ResMut<WebClientInfo>, mut client:ResMut<Cl
     }
 }
 
-fn send_messages<T:Message>(mut send_writer:EventReader<SendMsg<T>>, client:ResMut<Client>) {
+fn send_messages<T:Message>(mut send_writer:EventReader<SendPacket<T>>, client:ResMut<Client>) {
     let mut messages = Vec::with_capacity(64);
     for msg in send_writer.read() {
         messages.push(&msg.msg);
@@ -110,7 +110,7 @@ impl<T> BevyWebClientPlugin<T> {
 }
 impl<T:Message> Plugin for BevyWebClientPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.add_event::<SendMsg<T>>();
+        app.add_event::<SendPacket<T>>();
         app.add_event::<RecvPacket<T>>();
         app.insert_resource(WebClientInfo {
             url:"ws://localhost:8080".to_string(),

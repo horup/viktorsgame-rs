@@ -1,12 +1,12 @@
 mod systems;
 pub use systems::*;
 use bevy::{prelude::*, render::{settings::{Backends, WgpuSettings}, RenderPlugin}};
-use bevy_web_client::{BevyWebClientPlugin, SendMsg};
+use bevy_web_client::{BevyWebClientPlugin, SendPacket};
 use shared::Message;
 pub struct ClientPlugin;
 
-fn test(mut send_writer:EventWriter<SendMsg<Message>>) {
-    send_writer.send(SendMsg { msg: Message::Hello("Hello from Client".to_string()) });
+fn test(mut send_writer:EventWriter<SendPacket<Message>>) {
+    send_writer.send(SendPacket { msg: Message::Hello("Hello from Client".to_string()) });
 }
 
 impl Plugin for ClientPlugin {
