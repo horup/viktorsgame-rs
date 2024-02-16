@@ -19,6 +19,7 @@ impl Plugin for ClientPlugin {
             }),
             ..Default::default()
         }));
+        app.add_systems(First, recv);
         app.add_systems(Startup, setup);
         app.add_systems(Update, test);
     }

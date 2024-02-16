@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use bevy_web_client::RecvMsg;
+use shared::Message;
 
 /// set up a simple 3D scene
 pub fn setup(
@@ -35,4 +37,14 @@ pub fn setup(
         transform: Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     });
+}
+
+
+pub fn recv(mut commands: Commands, mut reader:EventReader<RecvMsg<Message>>) {
+    for msg in reader.read() {
+        match msg.msg {
+            Message::Hello(_) => todo!(),
+            Message::CompleteSnapshot(_) => todo!(),
+        }
+    }
 }
