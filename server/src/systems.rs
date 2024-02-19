@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_web_server::{Connection, RecvPacket, SendPacket};
 use shared::*;
 
-use crate::Message;
+use crate::{misc, Message, PlayerBundle};
 
 pub fn start(mut commands: Commands) {
     for i in 0..10 {
@@ -20,28 +20,28 @@ pub fn start(mut commands: Commands) {
     }
 }
 
+
+pub fn connected(
+    new_connections: Query<(Entity, &Connection), Added<Connection>>,
+    mut send_writer: EventWriter<SendPacket<Message>>,
+    mut replicates: misc::AllReplicatesQuery
+) {
+    for (_, connection) in new_connections.iter() {
+        let snapshot = misc::new_complete_snapshot(&mut replicates);
+        send_writer.send(SendPacket {
+            connection_id: connection.id.clone(),
+            msg: Message::CompleteSnapshot(snapshot.clone()),
+        });
+    }
+}
+
 type O<T> = Option<T>;
 pub fn transmit(
     connections: Query<&Connection>,
     mut send_writer: EventWriter<SendPacket<Message>>,
-    replicates: Query<(Entity, O<&Thing>, O<&Player>), With<Replicate>>,
 ) {
     // create complete snapshot
-    let mut snapshot = Snapshot::default();
-    for (id, thing, player) in replicates.iter() {
-        snapshot.entities.push(EntitySnapshot {
-            id,
-            thing: thing.map(|thing| ThingSnapshot {
-                x: Some(thing.pos.x),
-                y: Some(thing.pos.y),
-                vx: Some(thing.vel.x),
-                vy: Some(thing.vel.y),
-            }),
-            player: player.map(|player| PlayerSnapshot {
-                name: Some(player.name.clone()),
-            }),
-        })
-    }
+  /*  let mut snapshot = misc::new_complete_snapshot(replicates);
 
     // send snapshot
     for connection in connections.iter() {
@@ -49,5 +49,5 @@ pub fn transmit(
             connection_id: connection.id.clone(),
             msg: Message::CompleteSnapshot(snapshot.clone()),
         });
-    }
+    }*/
 }

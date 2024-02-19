@@ -43,8 +43,12 @@ pub fn setup(
 pub fn recv(mut commands: Commands, mut reader:EventReader<RecvPacket<Message>>) {
     for msg in reader.read() {
         match msg.msg {
-            Message::Hello(_) => todo!(),
-            Message::CompleteSnapshot(_) => todo!(),
+            Message::Hello(_) => {
+
+            },
+            Message::CompleteSnapshot(_) => {
+                
+            },
         }
     }
 }

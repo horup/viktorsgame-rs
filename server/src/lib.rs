@@ -1,9 +1,14 @@
 use std::time::Duration;
 use bevy::{app::ScheduleRunnerPlugin, prelude::*};
 mod systems;
+use systems::*;
+mod bundles;
+pub use bundles::*;
 mod resources;
 use bevy_web_server::BevyWebServerPlugin;
 pub use resources::*;
+mod misc;
+pub use misc::*;
 
 use shared::Message;
 pub struct ServerPlugin;
@@ -16,8 +21,8 @@ impl Plugin for ServerPlugin {
         .add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
             Duration::from_millis(1),
         )))
-        .insert_resource(Time::<Fixed>::from_seconds(0.1))
-        .add_systems(Startup, systems::start)
-        .add_systems(FixedUpdate, systems::transmit);
+        .insert_resource(Time::<Fixed>::from_seconds(1.0 / 60.0))
+        .add_systems(Startup, start)
+        .add_systems(FixedUpdate, (connected, transmit));
     }
 }
