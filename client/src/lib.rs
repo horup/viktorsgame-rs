@@ -26,6 +26,6 @@ impl Plugin for ClientPlugin {
         }));
         app.add_systems(First, recv);
         app.add_systems(Startup, setup);
-        app.add_systems(Update, (test, thing_spawned));
+        app.add_systems(Update, (test, thing_spawned, update_transformations));
     }
 }

@@ -17,7 +17,7 @@ pub fn setup(
         transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
         ..default()
     });
- /*   // cube
+    /*   // cube
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(Color::rgb_u8(124, 144, 255).into()),
@@ -41,32 +41,66 @@ pub fn setup(
     });
 }
 
-pub fn thing_spawned(mut commands: Commands, new_things:Query<(Entity, &Thing), Added<Thing>>) {
+pub fn thing_spawned(
+    mut commands: Commands,
+    new_things: Query<(Entity, &Thing), Added<Thing>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     for (id, thing) in new_things.iter() {
+        if let Some(mut e) = commands.get_entity(id) {
+            e.insert(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::rgb_u8(124, 144, 255).into()),
+                transform: Transform::from_xyz(thing.pos.x, thing.pos.y, thing.pos.z),
+                ..default()
+            });
+        }
     }
 }
 
-pub fn recv(mut commands: Commands, mut reader:EventReader<RecvPacket<Message>>, mut entity_mapper:ResMut<EntityMapper>) {
+pub fn update_transformations(mut things:Query<(&Thing, &mut Transform)>) {
+    for (thing, mut transform) in things.iter_mut() {
+        transform.translation = thing.pos;
+    }
+}
+
+pub fn recv(
+    mut commands: Commands,
+    mut reader: EventReader<RecvPacket<Message>>,
+    mut entity_mapper: ResMut<EntityMapper>,
+) {
     for msg in reader.read() {
         match &msg.msg {
-            Message::Hello(_) => {
-
-            },
+            Message::Hello(_) => {}
             Message::CompleteSnapshot(snapshot) => {
                 for entity_snapshot in &snapshot.entities {
                     let server_entity = entity_snapshot.id;
                     let mut spawned = false;
-                    let client_entity = entity_mapper.server_to_client(&server_entity).copied().unwrap_or_else(||{
-                        let id = commands.spawn(ServerEntity(entity_snapshot.id.clone())).id();
-                        id
-                    });
+                    let client_entity = entity_mapper
+                        .server_to_client(&server_entity)
+                        .copied()
+                        .unwrap_or_else(|| {
+                            let id = commands
+                                .spawn(ServerEntity(entity_snapshot.id.clone()))
+                                .id();
+                            id
+                        });
                     entity_mapper.map(server_entity, client_entity);
 
                     let mut client_entity = commands.entity(client_entity);
                     if let Some(thing) = &entity_snapshot.thing {
                         let thing = Thing {
-                            pos: Vec3::new(thing.x.unwrap_or_default(), thing.y.unwrap_or_default(), 0.0),
-                            vel: Vec3::new(thing.vx.unwrap_or_default(), thing.vy.unwrap_or_default(), 0.0),
+                            pos: Vec3::new(
+                                thing.x.unwrap_or_default(),
+                                thing.y.unwrap_or_default(),
+                                0.0,
+                            ),
+                            vel: Vec3::new(
+                                thing.vx.unwrap_or_default(),
+                                thing.vy.unwrap_or_default(),
+                                0.0,
+                            ),
                         };
                         let prev_thing = Prev(thing.clone());
                         client_entity.insert((thing, prev_thing));
@@ -78,7 +112,7 @@ pub fn recv(mut commands: Commands, mut reader:EventReader<RecvPacket<Message>>,
                         client_entity.insert(player);
                     }
                 }
-            },
+            }
         }
     }
 }
