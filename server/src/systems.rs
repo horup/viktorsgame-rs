@@ -35,6 +35,12 @@ pub fn connected(
     }
 }
 
+pub fn move_a_bit_for_fun(mut things:Query<&mut Thing>) {
+    for mut thing in things.iter_mut() {
+        thing.pos.x += 0.01;
+    }
+}
+
 type O<T> = Option<T>;
 pub fn transmit(
     connections: Query<&Connection>,
