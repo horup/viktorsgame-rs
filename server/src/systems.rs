@@ -26,8 +26,8 @@ pub fn connected(
     mut send_writer: EventWriter<SendPacket<Message>>,
     mut replicates: misc::AllReplicatesQuery
 ) {
+    let snapshot = misc::new_complete_snapshot(&mut replicates);
     for (_, connection) in new_connections.iter() {
-        let snapshot = misc::new_complete_snapshot(&mut replicates);
         send_writer.send(SendPacket {
             connection_id: connection.id.clone(),
             msg: Message::CompleteSnapshot(snapshot.clone()),
@@ -42,12 +42,13 @@ pub fn move_a_bit_for_fun(mut things:Query<&mut Thing>) {
 }
 
 type O<T> = Option<T>;
-pub fn transmit(
+pub fn transmit_changes(
     connections: Query<&Connection>,
     mut send_writer: EventWriter<SendPacket<Message>>,
+    mut replicates: misc::AllReplicatesQuery
 ) {
     // create complete snapshot
-  /*  let mut snapshot = misc::new_complete_snapshot(replicates);
+    let snapshot = misc::new_complete_snapshot(&mut replicates);
 
     // send snapshot
     for connection in connections.iter() {
@@ -55,5 +56,5 @@ pub fn transmit(
             connection_id: connection.id.clone(),
             msg: Message::CompleteSnapshot(snapshot.clone()),
         });
-    }*/
+    }
 }

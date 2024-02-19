@@ -23,6 +23,6 @@ impl Plugin for ServerPlugin {
         )))
         .insert_resource(Time::<Fixed>::from_seconds(1.0 / 60.0))
         .add_systems(Startup, start)
-        .add_systems(FixedUpdate, (connected, move_a_bit_for_fun, transmit));
+        .add_systems(FixedUpdate, (connected, move_a_bit_for_fun, transmit_changes));
     }
 }

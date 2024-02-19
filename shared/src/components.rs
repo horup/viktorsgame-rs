@@ -2,12 +2,12 @@ use std::ops::{Deref, DerefMut};
 
 use bevy::prelude::*;
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct Player {
     pub name:String
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct Thing {
     pub pos:Vec3,
     pub vel:Vec3
