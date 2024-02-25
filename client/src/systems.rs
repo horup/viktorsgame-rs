@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_web_client::RecvPacket;
 use shared::{Message, Player, Prev, Thing};
 
-use crate::{EntityMapper, ServerEntity};
+use crate::{EntityMapper, ServerEntity, ServerInfo};
 
 /// set up a simple 3D scene
 pub fn setup(
@@ -69,6 +69,8 @@ pub fn recv(
     mut commands: Commands,
     mut reader: EventReader<RecvPacket<Message>>,
     mut entity_mapper: ResMut<EntityMapper>,
+    mut server_info: ResMut<ServerInfo>,
+    time: Res<Time>
 ) {
     for msg in reader.read() {
         match &msg.msg {
@@ -112,7 +114,11 @@ pub fn recv(
                         client_entity.insert(player);
                     }
                 }
+                server_info.last_update = time.elapsed();
             }
+            Message::ServerInfo { timestep_sec: tick_rate_sec } => {
+                server_info.timestep_sec = *tick_rate_sec;
+            },
         }
     }
 }

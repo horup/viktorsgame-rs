@@ -16,6 +16,7 @@ fn test(mut send_writer:EventWriter<SendPacket<Message>>) {
 impl Plugin for ClientPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(EntityMapper::default());
+        app.insert_resource(ServerInfo::default());
         app.add_plugins(BevyWebClientPlugin::new() as BevyWebClientPlugin<shared::Message>);
         app.add_plugins(DefaultPlugins.set(RenderPlugin {
             render_creation:bevy::render::settings::RenderCreation::Automatic(WgpuSettings {

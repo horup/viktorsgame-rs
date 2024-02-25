@@ -21,7 +21,7 @@ impl Plugin for ServerPlugin {
         .add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
             Duration::from_millis(1),
         )))
-        .insert_resource(Time::<Fixed>::from_seconds(1.0 / 60.0))
+        .insert_resource(Time::<Fixed>::from_seconds(1.0 / 20.0))
         .add_systems(Startup, start)
         .add_systems(FixedUpdate, (connected, move_a_bit_for_fun, transmit_changes));
     }

@@ -24,10 +24,16 @@ pub fn start(mut commands: Commands) {
 pub fn connected(
     new_connections: Query<(Entity, &Connection), Added<Connection>>,
     mut send_writer: EventWriter<SendPacket<Message>>,
-    mut replicates: misc::AllReplicatesQuery
+    mut replicates: misc::AllReplicatesQuery,
+    time:Res<Time<Fixed>>
 ) {
+    let timestep = time.timestep().as_secs_f32();
     let snapshot = misc::new_complete_snapshot(&mut replicates);
     for (_, connection) in new_connections.iter() {
+        send_writer.send(SendPacket {
+            connection_id:connection.id.clone(),
+            msg: Message::ServerInfo { timestep_sec: timestep }
+        });
         send_writer.send(SendPacket {
             connection_id: connection.id.clone(),
             msg: Message::CompleteSnapshot(snapshot.clone()),
